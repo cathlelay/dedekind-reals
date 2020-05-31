@@ -176,6 +176,32 @@ Local Open Scope R_scope.
 
 (** Properties of addition. *)
 
+Lemma sum_interval_lower :
+  forall (x y : R) (a b : Q),
+    lower x a
+    -> lower y b
+    -> lower (x+y)%R (a + b).
+Proof.
+  intros.
+  destruct (lower_open x a H), (lower_open y b H0).
+  exists x0,x1. split.
+  apply Qplus_lt_le_compat. apply H1. apply Qlt_le_weak. apply H2.
+  split. apply H1. apply H2.
+Qed.
+
+Lemma sum_interval_upper :
+  forall (x y : R) (a b : Q),
+    upper x a
+    -> upper y b
+    -> upper (x+y)%R (a + b).
+Proof.
+  intros.
+  destruct (upper_open x a H), (upper_open y b H0).
+  exists x0,x1. split.
+  apply Qplus_lt_le_compat. apply H1. apply Qlt_le_weak. apply H2.
+  split. apply H1. apply H2.
+Qed.
+
 Lemma Rplus_assoc (x y z : R) : (x + y) + z == x + (y + z).
 Proof.
   split.
@@ -244,7 +270,7 @@ Proof.
   rewrite Qopp_opp in * |- * ; assumption.
 Qed.
 
-Lemma Rpluss_opp_r (x : R) : x + (- x) == 0.
+Lemma Rplus_opp_r (x : R) : x + (- x) == 0.
 Proof.
   split ; intros q H.
    - destruct H as [r [s [G1 [G2 G3]]]].
@@ -263,5 +289,48 @@ Qed.
 Lemma Rplus_opp_l (x : R) : (- x) + x == 0.
 Proof.
   rewrite Rplus_comm.
-  apply Rpluss_opp_r.
+  apply Rplus_opp_r.
+Qed.
+
+Lemma Ropp_plus_distr : forall r1 r2:R, - (r1 + r2) == - r1 + - r2.
+Proof.
+  split.
+  - intros q [r [s H]]. exists (-r)%Q,(-s)%Q. simpl.
+    repeat split. rewrite <- (Qplus_lt_l _ _ (r+s-q)). ring_simplify.
+    setoid_replace (-1*q) with (-q)%Q. apply H. ring.
+    apply (upper_proper r1 r). ring. apply H.
+    apply (upper_proper r2 s). ring. apply H.
+  - intros q [r [s H]]. exists (-r)%Q,(-s)%Q. 
+    repeat split. rewrite <- (Qplus_lt_l _ _ (r+s+q)). ring_simplify.
+    apply H. apply H. apply H.
+Qed.
+
+Lemma Rplus_lt_reg_l : forall r r1 r2, r + r1 < r + r2 -> r1 < r2.
+Proof.
+  intros. destruct H as [q [u l]]. destruct u,H,H,l,H1,H1.
+  assert (x + x0 < x1 + x2)%Q.
+  { exact (Qlt_trans _ q _ H H1). }
+  clear H1 H q.
+  exists x0. split. apply H0.
+  apply (lower_lower r2 x0 x2). 2: apply H2.
+  rewrite <- (Qplus_lt_r _ _ x). apply (Qlt_trans _ (x1+x2) _ H3).
+  rewrite Qplus_lt_l. apply (lower_below_upper r). apply H2. apply H0.
+Qed.
+
+Lemma Rplus_lt_reg_r : forall r r1 r2, r1 + r < r2 + r -> r1 < r2.
+Proof.
+  intros. rewrite Rplus_comm, (Rplus_comm r2) in H.
+  apply (Rplus_lt_reg_l _ _ _ H).
+Qed.
+
+Lemma Rplus_le_compat_l : forall r r1 r2:R, r1 <= r2 -> r + r1 <= r + r2.
+Proof.
+  intros. intros q [s [t H0]]. exists s, t.
+  repeat split. apply H0. apply H0. apply H. apply H0.
+Qed.
+
+Lemma Rplus_le_compat_r : forall r r1 r2:R, r1 <= r2 -> r1 + r <= r2 + r.
+Proof.
+  intros. intros q [s [t H0]]. exists s, t.
+  repeat split. apply H0. apply H. apply H0. apply H0.
 Qed.

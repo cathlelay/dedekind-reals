@@ -1,8 +1,18 @@
 (** The definition of Dedekind cuts. *)
 
-Require Import QArith QOrderedType.
-Require Import Morphisms SetoidClass.
-Require Import MiscLemmas.
+From Coq Require Import QArith QOrderedType.
+From Coq Require Import Morphisms SetoidClass.
+From DedekindReals Require Import MiscLemmas.
+
+(** In the definition below we use disjunction and existence where one might
+    expect sums and disjoint sums, in particular in [lower_open], [upper_open],
+    and [located].
+
+    See "Extensional constructive real analysis via locators" by Auke Booij,
+    https://export.arxiv.org/abs/1805.06781, for a discussion of what happens
+    when we replace the disjunction in [located] with a sum (spoiler: we get
+    the Cauchy reals!).
+*)
 
 (** A Dedekind cut is represented by the predicates [lower] and [upper],
     satisfying a number of conditions. *)
@@ -14,9 +24,9 @@ Structure R := {
   (* The cuts respect equality on Q. *)
   lower_proper : Proper (Qeq ==> iff) lower;
   upper_proper : Proper (Qeq ==> iff) upper;
-  (* The cuts are inabited. *)
-  lower_bound : {q : Q | lower q};
-  upper_bound : {r : Q | upper r};
+  (* The cuts are inhabited. *)
+  lower_bound : exists q : Q, lower q;
+  upper_bound : exists r : Q, upper r;
   (* The lower cut is a lower set. *)
   lower_lower : forall q r, q < r -> lower r -> lower q;
   (* The lower cut is open. *)
@@ -55,6 +65,19 @@ Proof.
     exfalso ; apply (disjoint x r) ; auto.
 Qed.
 
+(* Rle is a negative proposition *)
+Lemma Rnot_lt_le : forall r1 r2:R, ~ Rlt r1 r2 <-> Rle r2 r1.
+Proof.
+  split.
+  - intros. intros q l. unfold Rlt in H.
+    destruct (lower_open r2 q l), H0.
+    assert (~upper r1 x).
+    { intro abs. apply H. exists x. split; assumption. }
+    destruct (located r1 q x H0). exact H3. contradiction.
+  - intros H [r [H0 H1]]. specialize (H r H1).
+    apply (disjoint r1 r); split; assumption.
+Qed.
+
 (** Equality. *)
 Definition Req (x y : R) := Rle x y /\ Rle y x.
 
@@ -91,6 +114,7 @@ Definition Rneq (x y : R) := (Rlt x y \/ Rlt y x)%type.
 
 (** We introduce notation for equality, order and apartness. We put the notation
     in the scope [R_scope] which can then be opened whenever needed. *)
+Declare Scope R_scope.
 Infix "<=" := Rle : R_scope.
 Infix "<" := Rlt : R_scope.
 Infix "==" := Req : R_scope.
@@ -148,7 +172,7 @@ Proof.
   destruct (Q_dec q r) as [[E1 | E2] | E3].
   - assumption.
   - exfalso. apply (disjoint x r).
-    auto using (lower_lower x r q).
+    pose (lower_lower x r q); auto.
   - exfalso. apply (disjoint x r).
     split; [idtac | assumption].
     rewrite <- E3; assumption.
@@ -223,6 +247,34 @@ Qed.
 (** We declare that [R_of_Q] can be used automatically to coerce
     rational numbers to real numbers. *)
 Coercion R_of_Q : Q >-> R.
+
+Lemma R_lt_Q_iff : forall (x:R) (q:Q),
+    upper x q <-> x < q.
+Proof.
+  split.
+  - intros. destruct (upper_open x q H). exists x0. split.
+    apply H0. apply H0.
+  - intros. destruct H. apply (upper_upper x x0).
+    apply H. apply H.
+Qed.
+
+Lemma R_is_Q_iff : forall (x:R) (q:Q),
+    x == q <-> (forall r:Q, (Qlt q r -> upper x r) /\ (Qlt r q -> lower x r)).
+Proof.
+  split.
+  - split.
+    + intro. apply Req_equiv in H. destruct H.
+      apply (H r). simpl. exact H0.
+    + intro. destruct H. apply (H1 r). simpl. exact H0.
+  - split.
+    + intros s H0. simpl. destruct (Qlt_le_dec s q). exact q0.
+      exfalso. 
+      destruct (lower_open x s H0). specialize (H x0) as [H _].
+      apply (disjoint x x0). split. apply H1. apply H.
+      apply (Qle_lt_trans q s _ q0). apply H1.
+    + intros s H0. simpl in H0. pose proof (H s) as [_ H1].
+      apply H1. exact H0.
+Qed.
 
 (** Definition of common constants. *)
 Definition Rzero : R := R_of_Q 0.

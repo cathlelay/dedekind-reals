@@ -1,12 +1,17 @@
 (* The lattice structure of the reals. *)
 
-Require Import Setoid Morphisms.
-Require Import QArith.
-Require Import Qminmax.
+From Coq Require Import Setoid Morphisms.
+From Coq Require Import QArith.
+From Coq Require Import Qminmax.
 
-Require Import Cut MiscLemmas Additive Multiplication Order.
+From DedekindReals Require Import Cut MiscLemmas Additive Multiplication Order.
 
 Local Open Scope R_scope.
+
+(** A hack to be able to have proof-relevant unfinished constructions.
+    When this file is cleaned up, remove this axiom and the tactic. *)
+Axiom unfinished : forall (A : Type), A.
+Ltac todo := apply unfinished.
 
 Definition Rmin : R -> R -> R.
 Proof.
@@ -15,15 +20,15 @@ Proof.
             upper := (fun q => upper x q \/ upper y q) |}.
   - intros ? ? E. rewrite E ; tauto.
   - intros ? ? E. rewrite E ; tauto.
-  - destruct (lower_bound x) as [q ?].
-    destruct (lower_bound y) as [r ?].
+  - destruct (lower_bound x) as [q qmaj].
+    destruct (lower_bound y) as [r rmaj].
     exists (Qmin q r).
     split.
     + destruct (Q.min_spec q r) as [[G H]|[G H]].
       * setoid_rewrite H ; assumption.
-      * setoid_rewrite H. auto using (lower_le x r q).
+      * setoid_rewrite H. pose (lower_le x r q); auto.
     + destruct (Q.min_spec q r) as [[G H]|[G H]].
-      * setoid_rewrite H. auto using (lower_lower y q r).
+      * setoid_rewrite H. pose (lower_lower y q r); auto.
       * setoid_rewrite H ; assumption.
   - destruct (upper_bound y) as [r ?].
     exists r.
@@ -84,8 +89,8 @@ Proof.
     apply neg_false.
     split.
     + intros [[lx ly] [ux | uy]].
-      auto using (disjoint x q).
-      auto using (disjoint y q).
+      pose (disjoint x q); auto.
+      pose (disjoint y q); auto.
     + tauto.
   - intros q r T.
     assert (H:=(located x q r T)).
@@ -103,16 +108,16 @@ Proof.
   - destruct (lower_bound x) as [q ?].
     exists q.
     left ; assumption.
-  - destruct (upper_bound x) as [q ?].
-    destruct (upper_bound y) as [r ?].
+  - destruct (upper_bound x) as [q qmaj].
+    destruct (upper_bound y) as [r rmaj].
     exists (Qmax q r).
     split.
     + destruct (Q.max_spec q r) as [[G H]|[G H]].
-      * setoid_rewrite H. auto using (upper_upper x q r).
+      * setoid_rewrite H. pose (upper_upper x q r); auto.
       * setoid_rewrite H ; assumption.
     + destruct (Q.max_spec q r) as [[G H]|[G H]].
       * setoid_rewrite H ; assumption.
-      * setoid_rewrite H. auto using (upper_le y r q).
+      * setoid_rewrite H. pose (upper_le y r q); auto.
   - intros q r H [A | B].
     + assert (C:=(lower_lower x q r H A)).
       left ; assumption.
@@ -148,17 +153,17 @@ Proof.
     + destruct (Q.max_spec s q) as [[G H]|[G H]].
       * setoid_rewrite H ; assumption.
       * setoid_rewrite H.
-        auto using (upper_le x q s U G).
+        pose (upper_le x q s U G); auto.
     + destruct (Q.max_spec s q) as [[G H]|[G H]].
       * setoid_rewrite H.
-        auto using (upper_upper y s q G P).
+        pose (upper_upper y s q G P); auto.
       * setoid_rewrite H ; assumption.
   - intro.
     apply neg_false.
     split.
     + intros [[lx | ly] [ux  uy]].
-      auto using (disjoint x q).
-      auto using (disjoint y q).
+      pose (disjoint x q); auto.
+      pose (disjoint y q); auto.
     + tauto.
   - intros q r T.
     assert (H:=(located x q r T)).
@@ -218,21 +223,7 @@ Qed.
 
 Theorem Rmax_spec (x y z : R) : Rmax x y <= z <-> x <= z /\ y <= z.
 Proof.
-unfold Rle.
-split.
-- intro.
-split.
-+ intros q A.
-assert (C:=(H q)).
-admit.
-+ intros q A.
-assert (C:=(H q)).
-admit.
-- intros [H1 H2].
-intros q A.
-assert (C1:=(H1 q)).
-assert (C2:=(H2 q)).
-admit.
+  todo.
 Qed.
 
 Theorem Rmax_upper_l (x y : R) : x <= Rmax x y.
@@ -289,54 +280,54 @@ Qed.
 
 Theorem Rmin_plus_distr_r (x y z : R) : Rmin (x + z) (y + z) == Rmin x y + z.
 Proof.
-  admit.
+  todo.
 Qed.
 
 Theorem Rmin_plus_distr_l (x y z : R) : Rmin (x + y) (x + z) == x + Rmin y z.
 Proof.
-  admit.
+  todo.
 Qed.
 
 Theorem Rmax_plus_distr_r (x y z : R) : Rmax (x + z) (y + z) == Rmax x y + z.
 Proof.
-  admit.
+  todo.
 Qed.
 
 Theorem Rmax_plus_distr_l (x y z : R) : Rmax (x + y) (x + z) == x + Rmax y z.
 Proof.
-  admit.
+  todo.
 Qed.
 
 (* Distributivity of * over min and max. *)
 
 Theorem Rmin_mult_distr_r (x y z : R) : 0 < z -> Rmin (x * z) (y * z) == Rmin x y * z.
 Proof.
-  admit.
+  todo.
 Qed.
 
 Theorem Rmin_mult_distr_l (x y z : R) : 0 < x -> Rmin (x * y) (x * z) == x * Rmin y z.
 Proof.
-  admit.
+  todo.
 Qed.
 
 Theorem Rmax_mult_distr_r (x y z : R) : 0 < z -> Rmax (x * z) (y * z) == Rmax x y * z.
 Proof.
-  admit.
+  todo.
 Qed.
 
 Theorem Rmax_mult_distr_l (x y z : R) : 0 < x -> Rmax (x * y) (x * z) == x * Rmax y z.
 Proof.
-  admit.
+  todo.
 Qed.
 
 (* Opposite in relation to min and max. *)
 
 Theorem Ropp_min (x y : R) : Rmin (-x) (-y) == - (Rmax x y).
 Proof.
-  admit.
+  todo.
 Qed.
 
 Theorem Ropp_max (x y : R) : Rmax (-x) (-y) == - (Rmin x y).
 Proof.
-  admit.
+  todo.
 Qed.

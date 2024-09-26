@@ -1,9 +1,12 @@
 (** Various lemmas that seem to be missing from the standard library. *)
 
-Require Import QArith Qminmax Qabs.
+Require Import QArith Qminmax Qabs Lia.
+Require Import Qpower.
+
+Section MiscLemmas.
 
 Definition compose {A B C} (g : B -> C) (f : A -> B) := fun x => g (f x).
-Hint Unfold compose.
+Hint Unfold compose : core.
 Notation "g 'o' f" := (compose g f) (at level 40, left associativity).
 
 Definition const A B (y : B) : A -> B := (fun x => y).
@@ -31,7 +34,7 @@ Lemma Qopp_lt_compat : forall (p q : Q), p < q <-> -q < -p.
 Proof.
   intros [a b] [c d].
   unfold Qlt. simpl.
-  rewrite !Z.mul_opp_l. omega.
+  rewrite !Z.mul_opp_l. lia.
 Defined.
 
 Lemma Qplus_lt_lt_compat : forall (p q r s : Q), p < q -> r < s -> p + r < q + s.
@@ -187,8 +190,6 @@ Proof.
     apply Qplus_le_l; assumption.
 Qed.
 
-Require Import Qpower.
-
 Lemma Qpower_zero: forall p, ~p == 0 -> p^0 == 1.
 Proof.
 intros p H.
@@ -249,6 +250,34 @@ Proof.
   - apply Qpower_nonzero, Qnot_eq_sym, Qlt_not_eq ; assumption.
 Qed.
 
+Lemma pow_Q1_Qle : forall (q:Q) (n:nat),
+    Qle 1 q
+    -> Qle 1 (q^Z.of_nat n).
+Proof.
+  induction n.
+  - intros. apply Qle_refl.
+  - intros. rewrite Nat2Z.inj_succ. unfold Z.succ. rewrite Qpower_plus.
+    apply (Qle_trans _ (q ^ Z.of_nat n * 1)).
+    rewrite Qmult_1_r. exact (IHn H). rewrite Qmult_le_l. exact H.
+    apply Qpower_strictly_pos. apply (Qlt_le_trans 0 1 q).
+    reflexivity. exact H. intro abs. rewrite abs in H.
+    apply (Qle_not_lt _ _ H). reflexivity.
+Qed.
+
+Lemma pow_Q1_incr : forall (q:Q) (n p:nat),
+    Qle 1 q
+    -> le n p
+    -> Qle (q ^ Z.of_nat n) (q^Z.of_nat p).
+Proof.
+  intros. destruct (Nat.le_exists_sub n p H0), H1. subst p.
+  rewrite <- Qmult_1_l.
+  rewrite Nat2Z.inj_add. rewrite Qpower_plus.
+  rewrite Qmult_le_r. apply pow_Q1_Qle. exact H.
+  apply Qpower_strictly_pos. apply (Qlt_le_trans 0 1 q).
+  reflexivity. exact H. intro abs. rewrite abs in H.
+  apply (Qle_not_lt _ _ H). reflexivity.
+Qed.
+
 Lemma Qabs_eq_0 : forall q, Qabs q == 0 -> q == 0.
 Proof.
   intros q Hq.
@@ -276,3 +305,15 @@ Proof.
     + assumption.
     + apply (Qle_trans _ q) ; assumption.
 Qed.
+
+Lemma middle_between : forall q r : Q,
+    Qlt q r -> (Qlt q ((q+r)*(1#2)) /\ Qlt ((q+r)*(1#2)) r).
+Proof.
+  split.
+  - rewrite <- (Qmult_lt_r _ _ (2#1)). apply (Qplus_lt_r _ _ (-q)).
+    ring_simplify. apply H. reflexivity.
+  - rewrite <- (Qmult_lt_r _ _ (2#1)). apply (Qplus_lt_r _ _ (-r)).
+    ring_simplify. apply H. reflexivity.
+Qed.
+
+End MiscLemmas.
